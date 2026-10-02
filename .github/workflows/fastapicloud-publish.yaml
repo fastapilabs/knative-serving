@@ -1,0 +1,79 @@
+name: FastAPI Cloud Publish
+
+on:
+  push:
+    tags: ["fastapicloud-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  publish:
+    name: Build and publish Serving images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      GOFLAGS: -mod=vendor
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Set up ko and authenticate to GHCR
+        uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d # v0.9
+        with:
+          version: v0.19.1
+
+      - name: Build and publish Serving components
+        run: |
+          image_tags="$GITHUB_SHA"
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            image_tags="${image_tags},${GITHUB_REF_NAME}"
+          fi
+          echo "IMAGE_TAGS=$image_tags" >> "$GITHUB_ENV"
+
+          ko build ./cmd/controller \
+            ./cmd/activator \
+            ./cmd/autoscaler \
+            ./cmd/autoscaler-hpa \
+            ./cmd/webhook \
+            ./cmd/queue \
+            --base-import-paths \
+            --platform=linux/amd64 \
+            --jobs=2 \
+            --tags="$image_tags" \
+            --image-label="org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --image-label="org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --image-refs=image-refs.txt
+
+      - name: Summarize published images
+        run: |
+          {
+            echo "## Published Serving images"
+            echo
+            echo "Registry: ${KO_DOCKER_REPO}"
+            echo "Tags: ${IMAGE_TAGS}"
+            echo "Platform: linux/amd64"
+            echo
+            echo '```text'
+            cat image-refs.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
