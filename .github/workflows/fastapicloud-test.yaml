@@ -1,0 +1,34 @@
+name: FastAPI Cloud Test
+
+on:
+  push:
+    branches: ["fastapicloud/*"]
+  pull_request:
+    branches: ["fastapicloud/*"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: "go.mod"
+
+      - name: Test
+        run: |
+          while read -r gomod_dir; do
+            pushd "$gomod_dir" > /dev/null
+            echo "Testing ${gomod_dir}"
+            go test -race -count=1 ./... || failed=$?
+            popd > /dev/null
+            if (( failed )); then
+              echo "Tests failed in module $gomod_dir" >&2
+              exit $failed
+            fi
+          done < <(go run knative.dev/toolbox/modscope@latest list --path)
