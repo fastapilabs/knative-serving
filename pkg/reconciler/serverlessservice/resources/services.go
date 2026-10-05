@@ -66,14 +66,6 @@ func makePublicServicePorts(sks *v1alpha1.ServerlessService) []corev1.ServicePor
 		//nolint:gosec //ignore integer overflow since pkgnet is bounded
 		Port:       int32(pkgnet.ServicePort(sks.Spec.ProtocolType)),
 		TargetPort: targetPort(sks),
-	}, {
-		// The HTTPS port is used when activator-ca is enabled.
-		// Although it is not used by default, we put it here as it should be harmless
-		// and makes the code simple.
-		Name:       pkgnet.ServicePortNameHTTPS,
-		Protocol:   corev1.ProtocolTCP,
-		Port:       pkgnet.ServiceHTTPSPort,
-		TargetPort: intstr.FromInt(networking.BackendHTTPSPort),
 	}}
 	return ports
 }
@@ -117,10 +109,7 @@ func filterSubsetPorts(targetPort int32, subsets []corev1.EndpointSubset) []core
 		sst.Ports = nil
 		// Find the port we care about and remove all others.
 		for j, p := range sss.Ports {
-			switch p.Port {
-			case networking.BackendHTTPSPort:
-				fallthrough
-			case targetPort:
+			if p.Port == targetPort {
 				sst.Ports = append(sst.Ports, sss.Ports[j])
 			}
 		}
@@ -153,11 +142,6 @@ func MakePrivateService(sks *v1alpha1.ServerlessService, selector map[string]str
 				// This one is matching the public one, since this is the
 				// port queue-proxy listens on.
 				TargetPort: targetPort(sks),
-			}, {
-				Name:       pkgnet.ServicePortNameHTTPS,
-				Protocol:   corev1.ProtocolTCP,
-				Port:       pkgnet.ServiceHTTPSPort,
-				TargetPort: intstr.FromInt(networking.BackendHTTPSPort),
 			}, {
 				Name:       servingv1.AutoscalingQueueMetricsPortName,
 				Protocol:   corev1.ProtocolTCP,
