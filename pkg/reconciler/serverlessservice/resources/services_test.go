@@ -112,11 +112,6 @@ func svc(t networking.ServiceType, mods ...func(*corev1.Service)) *corev1.Servic
 				Protocol:   corev1.ProtocolTCP,
 				Port:       pkgnet.ServiceHTTPPort,
 				TargetPort: intstr.FromInt(networking.BackendHTTPPort),
-			}, {
-				Name:       pkgnet.ServicePortNameHTTPS,
-				Protocol:   corev1.ProtocolTCP,
-				Port:       pkgnet.ServiceHTTPSPort,
-				TargetPort: intstr.FromInt(networking.BackendHTTPSPort),
 			}},
 		},
 	}
@@ -182,11 +177,6 @@ func TestMakePublicService(t *testing.T) {
 				AppProtocol: &pkgnet.AppProtocolH2C,
 				Port:        pkgnet.ServiceHTTP2Port,
 				TargetPort:  intstr.FromInt(networking.BackendHTTP2Port),
-			}, {
-				Name:       pkgnet.ServicePortNameHTTPS,
-				Protocol:   corev1.ProtocolTCP,
-				Port:       pkgnet.ServiceHTTPSPort,
-				TargetPort: intstr.FromInt(networking.BackendHTTPSPort),
 			}}
 			s.Annotations = map[string]string{"cherub": "rock"}
 			s.OwnerReferences[0].UID = "1988"
@@ -203,11 +193,6 @@ func TestMakePublicService(t *testing.T) {
 				AppProtocol: &pkgnet.AppProtocolH2C,
 				Port:        pkgnet.ServiceHTTP2Port,
 				TargetPort:  intstr.FromInt(networking.BackendHTTP2Port),
-			}, {
-				Name:       pkgnet.ServicePortNameHTTPS,
-				Protocol:   corev1.ProtocolTCP,
-				Port:       pkgnet.ServiceHTTPSPort,
-				TargetPort: intstr.FromInt(networking.BackendHTTPSPort),
 			}}
 		}),
 	}, {
@@ -224,11 +209,6 @@ func TestMakePublicService(t *testing.T) {
 				AppProtocol: &pkgnet.AppProtocolH2C,
 				Port:        pkgnet.ServiceHTTP2Port,
 				TargetPort:  intstr.FromInt(networking.BackendHTTP2Port),
-			}, {
-				Name:       pkgnet.ServicePortNameHTTPS,
-				Protocol:   corev1.ProtocolTCP,
-				Port:       pkgnet.ServiceHTTPSPort,
-				TargetPort: intstr.FromInt(networking.BackendHTTPSPort),
 			}}
 			s.Labels["infinite"] = "sadness"
 		}),
@@ -414,11 +394,6 @@ func TestFilterSubsetPorts(t *testing.T) {
 					Port:     2006,
 					Protocol: "TCP",
 				},
-				{
-					Name:     "https",
-					Port:     networking.BackendHTTPSPort,
-					Protocol: "TCP",
-				},
 			},
 		}},
 	}}
@@ -474,7 +449,7 @@ func TestMakePrivateService(t *testing.T) {
 				Port:        pkgnet.ServiceHTTPPort,
 				TargetPort:  intstr.FromInt(networking.BackendHTTP2Port),
 			}
-			s.Spec.Ports[4] = corev1.ServicePort{
+			s.Spec.Ports[3] = corev1.ServicePort{
 				Name:       pkgnet.ServicePortNameH2C + "-istio",
 				Protocol:   corev1.ProtocolTCP,
 				Port:       networking.BackendHTTP2Port,
